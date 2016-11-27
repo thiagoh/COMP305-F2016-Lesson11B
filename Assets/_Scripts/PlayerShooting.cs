@@ -13,10 +13,12 @@ public class PlayerShooting : MonoBehaviour {
     public GameObject BulletImpact;
     public AudioSource RifleShotSound;
     public Transform PlayerCam;
-
+    public LineRenderer laser;
     public LayerMask layerMask;
+    public float WeaponRange = 50.0f;
 
     // PRIVATE VARIABLES
+    private WaitForSeconds waitTime = new WaitForSeconds(0.1f);
 
     // Use this for initialization
     void Start() {
@@ -36,6 +38,9 @@ public class PlayerShooting : MonoBehaviour {
             // show the MuzzleFlash at the FlashPoint without any rotation
             Instantiate(this.MuzzleFlash, this.FlashPoint.position, Quaternion.identity);
 
+            // initial Line position - element 0
+            laser.SetPosition(0, this.FlashPoint.position);
+
             // need a variable to hold the location of our Raycast Hit
             RaycastHit hit;
 
@@ -48,15 +53,31 @@ public class PlayerShooting : MonoBehaviour {
                 } else {
                     Instantiate(this.BulletImpact, hit.point, Quaternion.identity);
                 }
+
+                // terminus of the line position - element 1
+                laser.SetPosition(1, hit.point);
+
+            } else {
+                // if the laser misses - terminate it 50 units from the playercam
+                laser.SetPosition(1, this.PlayerCam.position + (this.PlayerCam.forward * this.WeaponRange));
             }
 
             // Play Rifle Sound
             this.RifleShotSound.Play();
+            StartCoroutine(ShotEffect());
         }
     }
 
     void OnTriggerEnter(Collider other) {
-        SceneManager.LoadScene("OutDoor");
-    }
 
+        if (other.gameObject.CompareTag("Exit")) {
+            SceneManager.LoadScene("OutDoor");
+        }
+    }
+    // CoRoutine
+    IEnumerator ShotEffect() {
+        laser.enabled = true;
+        yield return this.waitTime;
+        laser.enabled = false;
+    }
 }
